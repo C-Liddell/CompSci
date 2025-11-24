@@ -1,3 +1,3 @@
 SELECT *
 FROM volcanoes
-WHERE Name LIKE "P%"
+WHERE Name LIKE "P%";
