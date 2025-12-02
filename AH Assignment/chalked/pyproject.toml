@@ -12,7 +12,7 @@ author_email = "c.liddell@albynschool.org"
 formal_name = "Chalked"
 description = "Log Climbs"
 long_description = """More details about the app should go here.
-icon = "src/chalked/resources/chalkedIcon"
+icon = "src/chalked/resources/chalkedIcon.png"
 """
 sources = [
     "src/chalked",

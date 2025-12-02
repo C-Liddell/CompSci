@@ -9,7 +9,16 @@ from pathlib import Path
 import sqlite3
 import asyncio
 
-buttonStyle = Pack(background_color = "#6DBCB9", margin_left = 10, margin_right = 10)
+
+
+lightGreen = "#8CEFB6"
+darkGreen = "#6DBCB9"
+lightBlue = "#4888B7"
+darkBlue = "#474476"
+purple = "#372134"
+
+buttonStyle = Pack(background_color = darkGreen)
+dataEntryStyle = Pack(background_color = "white")
 
 
 
@@ -57,7 +66,7 @@ class Chalked(toga.App):
         try:
             database = open(self.path, "x")
             self.connectToDB()
-            self.cur.execute("CREATE TABLE 'Entries' ('ID' INTEGER, 'Date' TEXT, 'Type' TEXT, 'Grade' TEXT, 'Attempts' INTEGER, 'Notes' TEXT);")
+            self.cur.execute("CREATE TABLE 'Entries' ('ID' INTEGER, 'Date' TEXT, 'Type' TEXT, 'Grade' TEXT, 'Attempts' TEXT, 'Notes' TEXT);")
         except:
             self.connectToDB()
 
@@ -175,53 +184,124 @@ class AddScreen():
         self.cur = app.getCursor()
         self.rowID = rowID
 
+        self.gradeIndex = 0
+        self.attemptsIndex = 0
+
         #Defining Layout Boxes
-        self.contentBox = toga.Box(direction = COLUMN, flex = 1)
-        self.formBox = toga.Box(direction = COLUMN, flex = 1)
-        self.gradeBox = toga.Box(direction = ROW, flex = 1, align_items = CENTER)
-        self.attemptsBox = toga.Box(direction = ROW, flex = 1, align_items = CENTER)
-        self.notesBox = toga.Box(direction = ROW, flex = 1, align_items = CENTER)
+        self.contentBox = toga.Box(direction = COLUMN, flex = 1, gap = 1, background_color = purple)
+
+        self.typeBox = toga.Box(direction = ROW, flex = 1, align_items = CENTER, background_color = lightBlue, gap = 50)
+        self.dateBox = toga.Box(direction = ROW, flex = 2, align_items = CENTER, background_color = lightGreen)
+        self.gradeBox = toga.Box(direction = ROW, flex = 2, align_items = CENTER, background_color = lightGreen)
+        self.gradeEntryBox = toga.Box(direction = ROW, flex = 3, align_items = CENTER)
+        self.attemptsBox = toga.Box(direction = ROW, flex = 2, align_items = CENTER, background_color = lightGreen)
+        self.attemptsEntryBox = toga.Box(direction = ROW, flex = 3, align_items = CENTER)
+        self.notesBox = toga.Box(direction = ROW, flex = 2, align_items = CENTER, background_color = lightGreen)
+        self.buttonBox = toga.Box(direction = ROW, flex = 1, align_items = CENTER, background_color = lightBlue)
 
         #Defining Widgets
-        self.dateInput = toga.DateInput()
-        self.typeInput = toga.Selection(items = ["Lead Climb", "Boulder"])
-        self.gradeLabel = toga.Label(text = "Grade:", flex = 1)
-        self.gradeInput = toga.TextInput(flex = 3)
-        self.attemptsLabel = toga.Label(text = "Attempts:", flex = 1)
-        self.attemtpsInput = toga.NumberInput(flex = 3)
-        self.notesLabel = toga.Label(text = "Notes:", flex = 1)
-        self.notesInput = toga.MultilineTextInput(flex = 3)
+        self.leadButton = toga.Button(text = "Lead", style = buttonStyle, on_press = self.leadType, flex = 1)
+        self.boulderButton = toga.Button(text = "Boulder", style = buttonStyle, on_press = self.boulderType, flex = 1)
 
-        #Check if editing, or making new entry
+        self.dateLabel = toga.Label(text = "Date:", flex = 1)
+        self.dateInput = toga.DateInput(flex = 3, style = dataEntryStyle)
+
+        self.gradeLabel = toga.Label(text = "Grade:", flex = 1)
+        self.numberSelection = toga.Selection(items = [4, 5, 6, 7, 8, 9], flex = 1, style = dataEntryStyle)
+        self.gradeDecrease = toga.Button(text = "-", style = buttonStyle, on_press = self.decreaseGrade, flex = 1)
+        self.gradeInput = toga.Label(text = None, style = dataEntryStyle, flex = 1)
+        self.gradeIncrease = toga.Button(text = "+", style = buttonStyle, on_press = self.increaseGrade, flex = 1)
+        self.leadType(None)
+        self.gradeEntryBox.add(self.gradeDecrease, self.gradeInput, self.gradeIncrease)
+
+        self.attemptsValues = ["FLASH", "2", "3", "4", "5+", "PROJ"]
+        self.attemptsLabel = toga.Label(text = "Attempts:", flex = 1)
+        self.attemptsDecrease = toga.Button(text = "-", style = buttonStyle, on_press = self.decreaseAttempts, flex = 1)
+        self.attemtpsInput = toga.Label(text = self.attemptsValues[0], flex = 1, style = dataEntryStyle)
+        self.attemptsIncrease = toga.Button(text = "+", style = buttonStyle, on_press = self.increaseAttempts, flex = 1)
+        self.attemptsEntryBox.add(self.attemptsDecrease, self.attemtpsInput, self.attemptsIncrease)
+
+        self.notesLabel = toga.Label(text = "Notes:", flex = 1)
+        self.notesInput = toga.MultilineTextInput(flex = 3, style = dataEntryStyle)
+
+        #Check if editing or making new entry
         if rowID == None:
-            self.Button = toga.Button(direction = ROW, text = "Add", flex = 1, on_press = self.addEntry)
+            self.Button = toga.Button(direction = ROW, text = "Add", flex = 1, on_press = self.addEntry, style = buttonStyle)
         else:
-            self.Button = toga.Button(direction = ROW, text = "Update", flex = 1, on_press = self.updateEntry)
-            for col in self.app.cur.execute(f"SELECT * FROM Entries WHERE ID = {self.rowID};"):
-                self.selectedRow = Entry(col[0], col[1], col[2], col[3], col[4], col[5])
+            self.Button = toga.Button(direction = ROW, text = "Update", flex = 1, on_press = self.updateEntry, style = buttonStyle)
+            self.selectedRow = Entry(*next(self.app.cur.execute(f"SELECT * FROM Entries WHERE ID = {self.rowID}")))
             self.dateInput.value = self.selectedRow.getDate()
-            self.typeInput.value = self.selectedRow.getType()
             self.gradeInput.value = self.selectedRow.getGrade()
             self.attemtpsInput.value = self.selectedRow.getAttempts()
             self.notesInput.value = self.selectedRow.getNotes()
 
         #Adding Widgets to Boxes
-        self.gradeBox.add(self.gradeLabel, self.gradeInput)
-        self.attemptsBox.add(self.attemptsLabel, self.attemtpsInput)
+        self.typeBox.add(self.leadButton, self.boulderButton)
+        self.dateBox.add(self.dateLabel, self.dateInput)
+        self.gradeBox.add(self.gradeLabel, self.gradeEntryBox)
+        self.attemptsBox.add(self.attemptsLabel, self.attemptsEntryBox)
         self.notesBox.add(self.notesLabel, self.notesInput)
-        self.formBox.add(self.dateInput, self.typeInput, self.gradeBox, self.attemptsBox, self.notesBox)
-        self.contentBox.add(self.formBox, self.Button)
+        self.buttonBox.add(self.Button)
+
+        self.contentBox.add(self.typeBox, self.dateBox, self.gradeBox, self.attemptsBox, self.notesBox, self.buttonBox)
+
+
+    def leadType(self, widget):
+        self.type = "Lead"
+        self.leadButton.background_color = lightGreen
+        self.boulderButton.background_color = darkGreen
+
+        if self.numberSelection not in self.gradeEntryBox.children:
+            self.gradeEntryBox.insert(0, self.numberSelection)
+
+        self.gradeValues = ["a", "a+", "b", "b+", "c", "c+"]
+        self.gradeInput.text = self.gradeValues[0]
+        self.gradeIndex = 0
+
+    def boulderType(self, widget):
+        self.type = "Boulder"
+        self.leadButton.background_color = darkGreen
+        self.boulderButton.background_color = lightGreen
+
+        self.gradeEntryBox.remove(self.numberSelection)
+
+        self.gradeValues = [f"V{i}" for i in range(0,18)]
+        self.gradeInput.text = self.gradeValues[0]
+        self.gradeIndex = 0
+
+
+    def decreaseGrade(self, widget):
+        self.gradeIndex = self.changeValue(self.gradeIndex, self.gradeValues, "-", self.gradeInput)
+
+    def increaseGrade(self, widget):
+        self.gradeIndex = self.changeValue(self.gradeIndex, self.gradeValues, "+", self.gradeInput)
+
+    def decreaseAttempts(self, widget):
+        self.attemptsIndex = self.changeValue(self.attemptsIndex, self.attemptsValues, "-", self.attemtpsInput)
+
+    def increaseAttempts(self, widget):
+        self.attemptsIndex = self.changeValue(self.attemptsIndex, self.attemptsValues, "+", self.attemtpsInput)
+
+    def changeValue(self, index, valueList, direction, targetWidget):
+        if direction == "+":
+            index += 1
+        elif direction == "-":
+            index -= 1
+
+        index = max(0, min(index, len(valueList)-1))
+        targetWidget.text = valueList[index]
+        return index
 
 
     async def addEntry(self, widget):
+        grade = self.getGrade()
         try:
-            for col in self.cur.execute("SELECT MAX(ID) FROM Entries;"):
-                previousID = col[0]
+            previousID = next(self.cur.execute("SELECT MAX(ID) FROM Entries;"))[0]
             nextID = previousID + 1
         except:
             nextID = 0
 
-        self.cur.execute(f"INSERT INTO Entries VALUES ('{nextID}', '{self.dateInput.value}', '{self.typeInput.value}', '{self.gradeInput.value}', {self.attemtpsInput.value}, '{self.notesInput.value}');")
+        self.cur.execute(f"INSERT INTO Entries VALUES ('{nextID}', '{self.dateInput.value}', '{self.type}', '{grade}', '{self.attemtpsInput.text}', '{self.notesInput.value}');")
         self.app.con.commit()
         self.gradeInput.value = None
         self.attemtpsInput.value = None
@@ -230,10 +310,19 @@ class AddScreen():
         await self.app.main_window.dialog(addedEntryDialog)
 
     async def updateEntry(self, widget):
-        self.cur.execute(f"UPDATE Entries SET date = '{self.dateInput.value}', type = '{self.typeInput.value}', grade = '{self.gradeInput.value}', attempts = {self.attemtpsInput.value}, notes = '{self.notesInput.value}' WHERE ID = {self.rowID}")
+        grade = self.getGrade()
+        self.cur.execute(f"UPDATE Entries SET date = '{self.dateInput.value}', type = '{self.typeInput.value}', grade = '{grade}', attempts = '{self.attemtpsInput.text}', notes = '{self.notesInput.value}' WHERE ID = {self.rowID}")
         self.app.con.commit()
         updatedEntryDialog = toga.InfoDialog("Entry Updated", f"Entry Updated in Database")
         await self.app.main_window.dialog(updatedEntryDialog)
+
+    def getGrade(self):
+        if self.type == "Lead":
+            grade = f"{self.numberSelection.value}{self.gradeInput.text}"
+        elif self.type == "Boulder":
+            grade = f"{self.gradeInput.text}"
+        return grade
+
 
     def getContent(self):
         return self.contentBox
