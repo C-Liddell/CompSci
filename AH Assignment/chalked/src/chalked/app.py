@@ -129,6 +129,7 @@ class MainScreen():
         self.entries = []
 
         self.sortDirection = "Desc"
+        self.currentSort = "Date"
 
         #Defining Layout Boxes
         self.contentBox = toga.Box(direction = COLUMN, flex = 1)
@@ -189,11 +190,13 @@ class MainScreen():
         elif self.sortDirection == "Asc":
             self.sortDirection = "Desc"
             self.sortArrow.icon = "resources/arrow-down"
+        self.updateSort()
+        
+    def updateSort(self):
         if self.currentSort == "Date":
             self.sortByDate(None)
         elif self.currentSort == "Grade":
             self.sortByGrade(None)
-        
 
 
     def filterList(self, type):
@@ -201,6 +204,7 @@ class MainScreen():
         for row in self.cur.execute(f"SELECT * FROM Entries WHERE Type LIKE '{type}%';"):
             newList.append(Entry(row[0], row[1], row[2], row[3], row[4], row[5]))
         self.entries = newList
+        self.updateSort()
         self.updateTable()
 
         self.reset.enabled = True
@@ -278,7 +282,7 @@ class AddScreen():
         self.dateInput = toga.DateInput(flex = 3, style = dataEntryStyle)
 
         self.gradeLabel = toga.Label(text = "Grade:", flex = 1)
-        self.numberSelection = toga.Selection(items = [4, 5, 6, 7, 8, 9], flex = 1, style = dataEntryStyle)
+        self.numberSelection = toga.Selection(items = ["4", "5", "6", "7", "8", "9"], flex = 1, style = dataEntryStyle)
         self.gradeDecrease = toga.Button(text = "-", style = buttonStyle, on_press = self.decreaseGrade, flex = 1)
         self.gradeInput = toga.Label(text = None, style = dataEntryStyle, flex = 1)
         self.gradeIncrease = toga.Button(text = "+", style = buttonStyle, on_press = self.increaseGrade, flex = 1)
