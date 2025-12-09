@@ -37,6 +37,9 @@ class Entry():
     def getFormattedDate(self):
         return f"{self.__date[8:]}/{self.__date[5:7]}/{self.__date[0:4]}"
     
+    def getSortDate(self):
+        return int(self.__date.replace("-", ""))
+    
     def getDate(self):
         return self.__date
     
@@ -45,6 +48,14 @@ class Entry():
     
     def getGrade(self):
         return self.__grade
+    
+    def getSortGrade(self):
+        leadGrades = ["a", "a+", "b", "b+", "c", "c+"]
+        if self.__grade[0] == "V":
+            return int(self.__grade[1:])
+        else:
+            return int(f"{self.__grade[0]}{leadGrades.index(self.__grade[1:])}")
+        
     
     def getAttempts(self):
         return self.__attempts
@@ -72,10 +83,10 @@ class Chalked(toga.App):
 
 
         #Defining navbar
-        self.navBox = toga.Box(direction = ROW, background_color = "#474476")
-        self.homeButton = toga.Button("Home", on_press = self.switchScreenMain, flex = 1, style = buttonStyle)
-        self.addButton = toga.Button("Add Entry", on_press = self.switchScreenAdd, flex = 1, style = buttonStyle)
-        self.navBox.add(self.homeButton, self.addButton)
+        self.navBox = toga.Box(direction = ROW, background_color = darkBlue)
+        self.homeButton = toga.Button("Home", on_press = self.switchScreenMain, background_color = darkGreen, flex = 1)
+        self.addButton = toga.Button("Add Entry", on_press = self.switchScreenAdd, background_color = darkGreen, flex = 1)
+        self.navBox.add(toga.Box(flex = 1), self.homeButton,toga.Box(flex = 1), self.addButton, toga.Box(flex = 1))
 
 
         #Initalising mainBox + main_window, and defining inital content
@@ -117,23 +128,72 @@ class MainScreen():
         self.cur = app.getCursor()
         self.entries = []
 
+        self.sortDirection = "Desc"
+
         #Defining Layout Boxes
         self.contentBox = toga.Box(direction = COLUMN, flex = 1)
-        self.filterBox = toga.Box(direction = ROW, background_color = "#4888B7")
+        self.filterBox = toga.Box(direction = ROW, background_color = darkBlue)
+        self.sortBox = toga.Box(direction = ROW, alignment = CENTER, background_color = lightBlue)
         self.listBox = toga.Box(direction = COLUMN, flex = 1)
 
         #Defining Widgets
         self.filter1 = toga.Button("Lead Climbs", on_press = self.filterLead, flex = 1, style = buttonStyle)
         self.filter2 = toga.Button("Boulders", on_press = self.filterBoulder, flex = 1, style = buttonStyle)
         self.reset = toga.Button("Reset", on_press = self.resetFilter, style = buttonStyle)
+
+        self.sortLabel = toga.Label(text = "Sort By:")
+        self.sortDate = toga.Button(text = "Date", style = buttonStyle, on_press = self.sortByDate, flex = 1)
+        self.sortGrade = toga.Button(text = "Grade", style = buttonStyle, on_press = self.sortByGrade, flex = 1)
+        self.sortArrow = toga.Button(icon = "resources/arrow-down.png", style = buttonStyle, on_press = self.changeSortDirection)
+
         self.table = toga.DetailedList(primary_action = "View/Edit", on_primary_action = self.viewItem, secondary_action = "Delete", on_secondary_action = self.deleteItem, flex = 1, background_color = "#8CEFB6")
 
         #Adding Widgets to Boxes
-        self.contentBox.add(self.filterBox, self.listBox)
-        self.filterBox.add(self.filter1, self.filter2)
+        self.contentBox.add(self.filterBox, self.sortBox, self.listBox)
+        self.filterBox.add(self.filter1, self.filter2, self.reset)
+        self.sortBox.add(self.sortLabel, self.sortDate, self.sortGrade, self.sortArrow)
         self.listBox.add(self.table)
 
         self.resetFilter(None)
+        self.sortByDate(None)
+
+    def insertionSort(self, getData):
+        n = len(self.entries)
+        for i in range(1,n):
+            insert_index = i
+            current_value = self.entries.pop(i)
+            for j in range(i-1, -1, -1):
+                if (getData(self.entries[j]) < getData(current_value) and self.sortDirection == "Desc") or (getData(self.entries[j]) > getData(current_value) and self.sortDirection == "Asc"):
+                    insert_index = j
+                else:
+                    break
+            self.entries.insert(insert_index, current_value)
+        self.updateTable()
+    
+    def sortByDate(self, widget):
+        self.insertionSort(lambda entry: entry.getSortDate())
+        self.currentSort = "Date"
+        self.sortDate.background_color = lightGreen
+        self.sortGrade.background_color = darkGreen
+
+    def sortByGrade(self, widget):
+        self.insertionSort(lambda entry: entry.getSortGrade())
+        self.currentSort = "Grade"
+        self.sortGrade.background_color = lightGreen
+        self.sortDate.background_color = darkGreen
+
+    def changeSortDirection(self, widget):
+        if self.sortDirection == "Desc":
+            self.sortDirection = "Asc"
+            self.sortArrow.icon = "resources/arrow-up"
+        elif self.sortDirection == "Asc":
+            self.sortDirection = "Desc"
+            self.sortArrow.icon = "resources/arrow-down"
+        if self.currentSort == "Date":
+            self.sortByDate(None)
+        elif self.currentSort == "Grade":
+            self.sortByGrade(None)
+        
 
 
     def filterList(self, type):
@@ -143,26 +203,36 @@ class MainScreen():
         self.entries = newList
         self.updateTable()
 
-        if self.reset not in self.filterBox.children:
-            self.filterBox.add(self.reset)
+        self.reset.enabled = True
         
     def filterLead(self, widget):
         self.filterList("Lead")
+        self.filter1.background_color = lightGreen
+        self.filter2.background_color = darkGreen
 
     def filterBoulder(self, widget):
         self.filterList("Boulder")
+        self.filter2.background_color = lightGreen
+        self.filter1.background_color = darkGreen
 
     def resetFilter(self, widget):
         self.filterList("%")
-        self.filterBox.remove(self.reset)
+        self.reset.enabled = False
+        self.filter2.background_color = darkGreen
+        self.filter1.background_color = darkGreen
+
 
     def updateTable(self):
-        self.table.data = [{
-            "icon": None,
-            "title": i.getFormattedDate(),
-            "subtitle": i.getDetails(),
-            "data": i.getID()
-        } for i in self.entries]
+        self.table.data.clear()
+
+        for i in self.entries:
+            self.table.data.append({
+                "icon": None,
+                "title": i.getFormattedDate(),
+                "subtitle": i.getDetails(),
+                "data": i.getID()
+            })
+
 
     def deleteItem(self, widget, row):
         self.cur.execute(f"DELETE FROM Entries WHERE ID = '{row.data}';")
@@ -172,6 +242,7 @@ class MainScreen():
 
     def viewItem(self, widget, row):
         self.app.switchScreen(AddScreen(self.app, row.data))
+
 
     def getContent(self):
         return self.contentBox
@@ -211,7 +282,6 @@ class AddScreen():
         self.gradeDecrease = toga.Button(text = "-", style = buttonStyle, on_press = self.decreaseGrade, flex = 1)
         self.gradeInput = toga.Label(text = None, style = dataEntryStyle, flex = 1)
         self.gradeIncrease = toga.Button(text = "+", style = buttonStyle, on_press = self.increaseGrade, flex = 1)
-        self.leadType(None)
         self.gradeEntryBox.add(self.gradeDecrease, self.gradeInput, self.gradeIncrease)
 
         self.attemptsValues = ["FLASH", "2", "3", "4", "5+", "PROJ"]
@@ -227,12 +297,24 @@ class AddScreen():
         #Check if editing or making new entry
         if rowID == None:
             self.Button = toga.Button(direction = ROW, text = "Add", flex = 1, on_press = self.addEntry, style = buttonStyle)
+            self.leadType(None)
         else:
             self.Button = toga.Button(direction = ROW, text = "Update", flex = 1, on_press = self.updateEntry, style = buttonStyle)
             self.selectedRow = Entry(*next(self.app.cur.execute(f"SELECT * FROM Entries WHERE ID = {self.rowID}")))
+
+            if self.selectedRow.getType() == "Boulder":
+                self.boulderType(None)
+                self.gradeInput.text = self.selectedRow.getGrade()
+                self.gradeIndex = self.gradeValues.index(self.gradeInput.text)
+            if self.selectedRow.getType() == "Lead":
+                self.leadType(None)
+                self.numberSelection.value = self.selectedRow.getGrade()[0:1]
+                self.gradeInput.text = self.selectedRow.getGrade()[1:]
+                self.gradeIndex = self.gradeValues.index(self.gradeIndex.text)
+
             self.dateInput.value = self.selectedRow.getDate()
-            self.gradeInput.value = self.selectedRow.getGrade()
-            self.attemtpsInput.value = self.selectedRow.getAttempts()
+            self.attemtpsInput.text = self.selectedRow.getAttempts()
+            self.attemptsIndex = self.attemptsValues.index(self.attemtpsInput.text)
             self.notesInput.value = self.selectedRow.getNotes()
 
         #Adding Widgets to Boxes
@@ -294,7 +376,7 @@ class AddScreen():
 
 
     async def addEntry(self, widget):
-        grade = self.getGrade()
+        grade = self.getGradeValue()
         try:
             previousID = next(self.cur.execute("SELECT MAX(ID) FROM Entries;"))[0]
             nextID = previousID + 1
@@ -310,13 +392,13 @@ class AddScreen():
         await self.app.main_window.dialog(addedEntryDialog)
 
     async def updateEntry(self, widget):
-        grade = self.getGrade()
-        self.cur.execute(f"UPDATE Entries SET date = '{self.dateInput.value}', type = '{self.typeInput.value}', grade = '{grade}', attempts = '{self.attemtpsInput.text}', notes = '{self.notesInput.value}' WHERE ID = {self.rowID}")
+        grade = self.getGradeValue()
+        self.cur.execute(f"UPDATE Entries SET date = '{self.dateInput.value}', type = '{self.type}', grade = '{grade}', attempts = '{self.attemtpsInput.text}', notes = '{self.notesInput.value}' WHERE ID = {self.rowID}")
         self.app.con.commit()
         updatedEntryDialog = toga.InfoDialog("Entry Updated", f"Entry Updated in Database")
         await self.app.main_window.dialog(updatedEntryDialog)
 
-    def getGrade(self):
+    def getGradeValue(self):
         if self.type == "Lead":
             grade = f"{self.numberSelection.value}{self.gradeInput.text}"
         elif self.type == "Boulder":
@@ -330,4 +412,4 @@ class AddScreen():
 
 
 def main():
-    return Chalked() 
+    return Chalked()
