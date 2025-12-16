@@ -141,7 +141,6 @@ class MainScreen():
         self.filter1 = toga.Button("Lead Climbs", on_press = self.filterLead, flex = 1, style = buttonStyle)
         self.filter2 = toga.Button("Boulders", on_press = self.filterBoulder, flex = 1, style = buttonStyle)
         self.reset = toga.Button("Reset", on_press = self.resetFilter, style = buttonStyle)
-
         self.sortLabel = toga.Label(text = "Sort By:")
         self.sortDate = toga.Button(text = "Date", style = buttonStyle, on_press = self.sortByDate, flex = 1)
         self.sortGrade = toga.Button(text = "Grade", style = buttonStyle, on_press = self.sortByGrade, flex = 1)
@@ -157,6 +156,7 @@ class MainScreen():
 
         self.resetFilter(None)
         self.sortByDate(None)
+
 
     def insertionSort(self, getData):
         n = len(self.entries)
