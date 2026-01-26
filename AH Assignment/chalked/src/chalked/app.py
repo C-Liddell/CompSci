@@ -254,13 +254,13 @@ class MainScreen():
 
 
 class AddScreen():
-    def __init__(self, app, rowID = None):
+    def __init__(self, app, rowID = 0):
         self.app = app
         self.cur = app.getCursor()
         self.rowID = rowID
 
         self.gradeIndex = 0
-        self.attemptsIndex = 0
+        self.attemptsIndex = 0  
 
         #Defining Layout Boxes
         self.contentBox = toga.Box(direction = COLUMN, flex = 1, gap = 1, background_color = purple)
@@ -314,7 +314,7 @@ class AddScreen():
                 self.leadType(None)
                 self.numberSelection.value = self.selectedRow.getGrade()[0:1]
                 self.gradeInput.text = self.selectedRow.getGrade()[1:]
-                self.gradeIndex = self.gradeValues.index(self.gradeIndex.text)
+                self.gradeIndex = self.gradeValues.index(self.gradeInput.text)
 
             self.dateInput.value = self.selectedRow.getDate()
             self.attemtpsInput.text = self.selectedRow.getAttempts()
