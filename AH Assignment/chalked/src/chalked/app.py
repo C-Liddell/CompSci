@@ -65,6 +65,20 @@ class Entry():
 
     def getDetails(self):
         return f"{self.__type}: {self.__grade}, {self.__notes}"
+    
+    def getIcon(self):
+        if self.__attempts == "FLASH":
+            return toga.Icon("resources/flash-icon")
+        elif self.__attempts == "2":
+            return toga.Icon("resources/two-icon")
+        elif self.__attempts == "3":
+            return toga.Icon("resources/three-icon")
+        elif self.__attempts == "4":
+            return toga.Icon("resources/four-icon")
+        elif self.__attempts == "5+":
+            return toga.Icon("resources/five-icon")
+        else:
+            return toga.Icon("resources/proj-icon")
 
 
 
@@ -231,7 +245,7 @@ class MainScreen():
 
         for i in self.entries:
             self.table.data.append({
-                "icon": None,
+                "icon": i.getIcon(),
                 "title": i.getFormattedDate(),
                 "subtitle": i.getDetails(),
                 "data": i.getID()
@@ -254,7 +268,7 @@ class MainScreen():
 
 
 class AddScreen():
-    def __init__(self, app, rowID = 0):
+    def __init__(self, app, rowID = None):
         self.app = app
         self.cur = app.getCursor()
         self.rowID = rowID
