@@ -17,7 +17,7 @@ lightBlue = "#4888B7"
 darkBlue = "#474476"
 purple = "#372134"
 
-buttonStyle = Pack(background_color = darkGreen)
+buttonStyle = Pack(background_color = darkGreen, flex = 1)
 dataEntryStyle = Pack(background_color = "white")
 
 
@@ -86,7 +86,7 @@ class Chalked(toga.App):
     def startup(self):
 
 
-        #Checking for/creating database
+        #Creates/Connects to database
         self.path = self.paths.data / "entriesDatabase.db"
         try:
             database = open(self.path, "x")
@@ -96,14 +96,14 @@ class Chalked(toga.App):
             self.connectToDB()
 
 
-        #Defining navbar
+        #Defines navbar
         self.navBox = toga.Box(direction = ROW, background_color = darkBlue)
-        self.homeButton = toga.Button("Home", on_press = self.switchScreenMain, background_color = darkGreen, flex = 1)
-        self.addButton = toga.Button("Add Entry", on_press = self.switchScreenAdd, background_color = darkGreen, flex = 1)
-        self.navBox.add(toga.Box(flex = 1), self.homeButton,toga.Box(flex = 1), self.addButton, toga.Box(flex = 1))
+        self.homeButton = toga.Button("Home", on_press = self.switchScreenMain, style = buttonStyle)
+        self.addButton = toga.Button("Add Entry", on_press = self.switchScreenAdd, style = buttonStyle)
+        self.navBox.add(toga.Box(flex=1), self.homeButton, toga.Box(flex=1), self.addButton, toga.Box(flex=1))
 
 
-        #Initalising mainBox + main_window, and defining inital content
+        #Initalises home screen
         self.mainBox = toga.Box(direction = COLUMN, flex = 1)
         self.main_window = toga.MainWindow(title=self.formal_name)
         self.switchScreenMain(None)
@@ -119,18 +119,18 @@ class Chalked(toga.App):
     def getCursor(self):
         return self.cur
 
-    #Switches mainBox content and updates main_window
+    #Switches screen content
     def switchScreen(self, newScreen):
         self.activeScreen = newScreen
         self.mainBox.clear()
         self.mainBox.add(self.activeScreen.getContent(), self.navBox)
         self.main_window.content = self.mainBox
 
-    #Handler for home button
+    #Handler for homeButton
     def switchScreenMain(self, widget):
         self.switchScreen(MainScreen(self))
 
-    #Handler for add button
+    #Handler for addButton
     def switchScreenAdd(self, widget):
         self.switchScreen(AddScreen(self))
 
@@ -138,40 +138,43 @@ class Chalked(toga.App):
 
 class MainScreen():
     def __init__(self, app):
+        #Inhertis variables from super class
         self.app = app
         self.cur = app.getCursor()
-        self.entries = []
 
+        #Initalises default values
+        self.entries = []
         self.sortDirection = "Desc"
         self.currentSort = "Date"
 
-        #Defining Layout Boxes
-        self.contentBox = toga.Box(direction = COLUMN, flex = 1)
+        #Defines layout boxes
+        self.contentBox = toga.Box(direction = COLUMN, background_color = "black", flex = 1)
         self.filterBox = toga.Box(direction = ROW, background_color = darkBlue)
-        self.sortBox = toga.Box(direction = ROW, alignment = CENTER, background_color = lightBlue)
-        self.listBox = toga.Box(direction = COLUMN, flex = 1)
+        self.sortBox = toga.Box(direction = ROW, background_color = lightBlue)
+        self.listBox = toga.Box(direction = COLUMN, background_color = purple, flex = 1)
 
-        #Defining Widgets
-        self.filter1 = toga.Button("Lead Climbs", on_press = self.filterLead, flex = 1, style = buttonStyle)
-        self.filter2 = toga.Button("Boulders", on_press = self.filterBoulder, flex = 1, style = buttonStyle)
-        self.reset = toga.Button("Reset", on_press = self.resetFilter, style = buttonStyle)
+        #Defines widgets
+        self.leadFilterButton = toga.Button("Lead Climbs", on_press = self.filterLead, style = buttonStyle)
+        self.boulderFilterButton = toga.Button("Boulders", on_press = self.filterBoulder, style = buttonStyle)
+        self.resetFilterButton = toga.Button("Reset", on_press = self.filterReset, background_color = darkGreen, flex = 0.5)
         self.sortLabel = toga.Label(text = "Sort By:")
-        self.sortDate = toga.Button(text = "Date", style = buttonStyle, on_press = self.sortByDate, flex = 1)
-        self.sortGrade = toga.Button(text = "Grade", style = buttonStyle, on_press = self.sortByGrade, flex = 1)
-        self.sortArrow = toga.Button(icon = "resources/arrow-down.png", style = buttonStyle, on_press = self.changeSortDirection)
+        self.sortDate = toga.Button(text = "Date", on_press = self.sortByDate, style = buttonStyle)
+        self.sortGrade = toga.Button(text = "Grade", on_press = self.sortByGrade, style = buttonStyle)
+        self.sortArrow = toga.Button(text = "⌄", on_press = self.changeSortDirection, background_color = darkGreen)
+        self.table = toga.DetailedList(primary_action = "View/Edit", on_primary_action = self.viewItem, secondary_action = "Delete", on_secondary_action = self.deleteItem, background_color = "#8CEFB6")
 
-        self.table = toga.DetailedList(primary_action = "View/Edit", on_primary_action = self.viewItem, secondary_action = "Delete", on_secondary_action = self.deleteItem, flex = 1, background_color = "#8CEFB6")
-
-        #Adding Widgets to Boxes
+        #Adds widgets to boxes
         self.contentBox.add(self.filterBox, self.sortBox, self.listBox)
-        self.filterBox.add(self.filter1, self.filter2, self.reset)
-        self.sortBox.add(self.sortLabel, self.sortDate, self.sortGrade, self.sortArrow)
+        self.filterBox.add(self.leadFilterButton, self.boulderFilterButton, self.resetFilterButton)
+        self.sortBox.add(toga.Box(flex=0.5), self.sortLabel, self.sortDate, self.sortGrade, self.sortArrow, toga.Box(flex=0.5))
         self.listBox.add(self.table)
 
-        self.resetFilter(None)
+        #Initalises default filter and sort
+        self.filterReset(None)
         self.sortByDate(None)
 
 
+    #Sorts entries based on given attribute
     def insertionSort(self, getData):
         n = len(self.entries)
         for i in range(1,n):
@@ -185,34 +188,38 @@ class MainScreen():
             self.entries.insert(insert_index, current_value)
         self.updateTable()
     
+    #Handler for sortDate button
     def sortByDate(self, widget):
         self.insertionSort(lambda entry: entry.getSortDate())
         self.currentSort = "Date"
         self.sortDate.background_color = lightGreen
         self.sortGrade.background_color = darkGreen
 
+    #Handler for sortGrade button
     def sortByGrade(self, widget):
         self.insertionSort(lambda entry: entry.getSortGrade())
         self.currentSort = "Grade"
         self.sortGrade.background_color = lightGreen
         self.sortDate.background_color = darkGreen
 
+    #Handler for sort arrow button
     def changeSortDirection(self, widget):
         if self.sortDirection == "Desc":
             self.sortDirection = "Asc"
-            self.sortArrow.icon = "resources/arrow-up"
+            self.sortArrow.text = "^"
         elif self.sortDirection == "Asc":
             self.sortDirection = "Desc"
-            self.sortArrow.icon = "resources/arrow-down"
+            self.sortArrow.text = "⌄"
         self.updateSort()
         
+    #Calls re-sort when sort direction is changed 
     def updateSort(self):
         if self.currentSort == "Date":
             self.sortByDate(None)
         elif self.currentSort == "Grade":
             self.sortByGrade(None)
 
-
+    #Queries db for entries of a specific type
     def filterList(self, type):
         newList = []
         for row in self.cur.execute(f"SELECT * FROM Entries WHERE Type LIKE '{type}%';"):
@@ -221,25 +228,28 @@ class MainScreen():
         self.updateSort()
         self.updateTable()
 
-        self.reset.enabled = True
+        self.resetFilterButton.enabled = True
         
+    #Handler for leadFilterButton
     def filterLead(self, widget):
         self.filterList("Lead")
-        self.filter1.background_color = lightGreen
-        self.filter2.background_color = darkGreen
+        self.leadFilterButton.background_color = lightGreen
+        self.boulderFilterButton.background_color = darkGreen
 
+    #Handler for boulderFilterButton
     def filterBoulder(self, widget):
         self.filterList("Boulder")
-        self.filter2.background_color = lightGreen
-        self.filter1.background_color = darkGreen
+        self.boulderFilterButton.background_color = lightGreen
+        self.leadFilterButton.background_color = darkGreen
 
-    def resetFilter(self, widget):
+    #Handler for resetFilterButton
+    def filterReset(self, widget):
         self.filterList("%")
-        self.reset.enabled = False
-        self.filter2.background_color = darkGreen
-        self.filter1.background_color = darkGreen
+        self.resetFilterButton.enabled = False
+        self.boulderFilterButton.background_color = darkGreen
+        self.leadFilterButton.background_color = darkGreen
 
-
+    #Updates data in table from entries list
     def updateTable(self):
         self.table.data.clear()
 
@@ -251,17 +261,18 @@ class MainScreen():
                 "data": i.getID()
             })
 
-
+    #Deletes entry from db and entries list
     def deleteItem(self, widget, row):
         self.cur.execute(f"DELETE FROM Entries WHERE ID = '{row.data}';")
         self.entries.pop(row.data)
         self.app.con.commit()
         self.updateTable()
 
+    #Switches to add screen with all fields populated with selected entry data
     def viewItem(self, widget, row):
         self.app.switchScreen(AddScreen(self.app, row.data))
 
-
+    #Returns MainScreen content to the Chalked superclass
     def getContent(self):
         return self.contentBox
 

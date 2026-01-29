@@ -11,9 +11,8 @@ author_email = "c.liddell@albynschool.org"
 [tool.briefcase.app.chalked]
 formal_name = "Chalked"
 description = "Log Climbs"
-long_description = """More details about the app should go here.
-icon = "src/chalked/resources/chalkedIcon.png"
-"""
+long_description = """More details about the app should go here."""
+icon = "resources/chalkedIcon"
 sources = [
     "src/chalked",
 ]
