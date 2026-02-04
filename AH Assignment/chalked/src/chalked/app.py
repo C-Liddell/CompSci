@@ -18,7 +18,6 @@ darkBlue = "#474476"
 purple = "#372134"
 
 buttonStyle = Pack(background_color = darkGreen, flex = 1)
-dataEntryStyle = Pack(background_color = "white")
 
 
 
@@ -63,8 +62,11 @@ class Entry():
     def getNotes(self):
         return self.__notes
 
-    def getDetails(self):
-        return f"{self.__type}: {self.__grade}, {self.__notes}"
+    def getTitle(self):
+        return f"{self.getFormattedDate()} | {self.__type} {self.__grade}"
+
+    def getNotes(self):
+        return f"{self.__notes}"
     
     def getIcon(self):
         if self.__attempts == "FLASH":
@@ -104,7 +106,7 @@ class Chalked(toga.App):
 
 
         #Initalises home screen
-        self.mainBox = toga.Box(direction = COLUMN, flex = 1)
+        self.mainBox = toga.Box(direction = COLUMN, flex = 1, background_color = "black")
         self.main_window = toga.MainWindow(title=self.formal_name)
         self.switchScreenMain(None)
         self.main_window.show()
@@ -129,10 +131,14 @@ class Chalked(toga.App):
     #Handler for homeButton
     def switchScreenMain(self, widget):
         self.switchScreen(MainScreen(self))
+        self.homeButton.background_color = lightGreen
+        self.addButton.background_color = darkGreen
 
     #Handler for addButton
     def switchScreenAdd(self, widget):
         self.switchScreen(AddScreen(self))
+        self.addButton.background_color = lightGreen
+        self.homeButton.background_color = darkGreen
 
 
 
@@ -161,7 +167,7 @@ class MainScreen():
         self.sortDate = toga.Button(text = "Date", on_press = self.sortByDate, style = buttonStyle)
         self.sortGrade = toga.Button(text = "Grade", on_press = self.sortByGrade, style = buttonStyle)
         self.sortArrow = toga.Button(text = "⌄", on_press = self.changeSortDirection, background_color = darkGreen)
-        self.table = toga.DetailedList(primary_action = "View/Edit", on_primary_action = self.viewItem, secondary_action = "Delete", on_secondary_action = self.deleteItem, background_color = "#8CEFB6")
+        self.table = toga.DetailedList(primary_action = "View/Edit", on_primary_action = self.viewItem, secondary_action = "Delete", on_secondary_action = self.deleteItem, background_color = lightGreen, flex = 1)
 
         #Adds widgets to boxes
         self.contentBox.add(self.filterBox, self.sortBox, self.listBox)
@@ -256,16 +262,16 @@ class MainScreen():
         for i in self.entries:
             self.table.data.append({
                 "icon": i.getIcon(),
-                "title": i.getFormattedDate(),
-                "subtitle": i.getDetails(),
+                "title": i.getTitle(),
+                "subtitle": i.getNotes(),
                 "data": i.getID()
             })
 
     #Deletes entry from db and entries list
     def deleteItem(self, widget, row):
         self.cur.execute(f"DELETE FROM Entries WHERE ID = '{row.data}';")
-        self.entries.pop(row.data)
         self.app.con.commit()
+        self.entries.pop(row.data)
         self.updateTable()
 
     #Switches to add screen with all fields populated with selected entry data
@@ -280,63 +286,56 @@ class MainScreen():
 
 class AddScreen():
     def __init__(self, app, rowID = None):
+        #Inherits variables from super class
         self.app = app
         self.cur = app.getCursor()
         self.rowID = rowID
 
+        #Initalises default values
         self.gradeIndex = 0
         self.attemptsIndex = 0  
 
-        #Defining Layout Boxes
-        self.contentBox = toga.Box(direction = COLUMN, flex = 1, gap = 1, background_color = purple)
+        #Defines layout boxes
+        self.contentBox = toga.Box(direction = COLUMN, background_color = purple, flex = 1)
+        self.typeBox = toga.Box(direction = ROW, background_color = lightBlue, align_items = CENTER, flex = 1)
+        self.dateBox = toga.Box(direction = ROW, background_color = lightGreen, align_items = CENTER, flex = 2)
+        self.gradeBox = toga.Box(direction = ROW, background_color = lightGreen, align_items = CENTER, flex = 2)
+        self.attemptsBox = toga.Box(direction = ROW, background_color = lightGreen, align_items = CENTER, flex = 2)
+        self.notesBox = toga.Box(direction = ROW, background_color = lightGreen, align_items = CENTER, flex = 2)
+        self.buttonBox = toga.Box(direction = ROW, background_color = lightBlue, align_items = CENTER, flex = 1)
 
-        self.typeBox = toga.Box(direction = ROW, flex = 1, align_items = CENTER, background_color = lightBlue, gap = 50)
-        self.dateBox = toga.Box(direction = ROW, flex = 2, align_items = CENTER, background_color = lightGreen)
-        self.gradeBox = toga.Box(direction = ROW, flex = 2, align_items = CENTER, background_color = lightGreen)
-        self.gradeEntryBox = toga.Box(direction = ROW, flex = 3, align_items = CENTER)
-        self.attemptsBox = toga.Box(direction = ROW, flex = 2, align_items = CENTER, background_color = lightGreen)
-        self.attemptsEntryBox = toga.Box(direction = ROW, flex = 3, align_items = CENTER)
-        self.notesBox = toga.Box(direction = ROW, flex = 2, align_items = CENTER, background_color = lightGreen)
-        self.buttonBox = toga.Box(direction = ROW, flex = 1, align_items = CENTER, background_color = lightBlue)
-
-        #Defining Widgets
-        self.leadButton = toga.Button(text = "Lead", style = buttonStyle, on_press = self.leadType, flex = 1)
-        self.boulderButton = toga.Button(text = "Boulder", style = buttonStyle, on_press = self.boulderType, flex = 1)
-
-        self.dateLabel = toga.Label(text = "Date:", flex = 1)
-        self.dateInput = toga.DateInput(flex = 3, style = dataEntryStyle)
-
-        self.gradeLabel = toga.Label(text = "Grade:", flex = 1)
-        self.numberSelection = toga.Selection(items = ["4", "5", "6", "7", "8", "9"], flex = 1, style = dataEntryStyle)
-        self.gradeDecrease = toga.Button(text = "-", style = buttonStyle, on_press = self.decreaseGrade, flex = 1)
-        self.gradeInput = toga.Label(text = None, style = dataEntryStyle, flex = 1)
-        self.gradeIncrease = toga.Button(text = "+", style = buttonStyle, on_press = self.increaseGrade, flex = 1)
-        self.gradeEntryBox.add(self.gradeDecrease, self.gradeInput, self.gradeIncrease)
-
+        #Defines widgets
+        self.leadButton = toga.Button(text = "Lead", on_press = self.leadType, style = buttonStyle)
+        self.boulderButton = toga.Button(text = "Boulder", on_press = self.boulderType, style = buttonStyle)
+        self.dateLabel = toga.Label(text = "Date:", flex = 0.5)
+        self.dateInput = toga.DateInput(flex = 1, background_color = "white")
+        self.gradeLabel = toga.Label(text = "Grade:", flex = 0.5)
+        self.numberSelection = toga.Selection(items = ["4", "5", "6", "7", "8", "9"], background_color = "white", flex = 1)
+        self.gradeDecrease = toga.Button(text = "-", on_press = self.decreaseGrade, style = buttonStyle)
+        self.gradeInput = toga.Label(text = None, background_color = "white", flex = 1)
+        self.gradeIncrease = toga.Button(text = "+", on_press = self.increaseGrade, style = buttonStyle)
         self.attemptsValues = ["FLASH", "2", "3", "4", "5+", "PROJ"]
-        self.attemptsLabel = toga.Label(text = "Attempts:", flex = 1)
-        self.attemptsDecrease = toga.Button(text = "-", style = buttonStyle, on_press = self.decreaseAttempts, flex = 1)
-        self.attemtpsInput = toga.Label(text = self.attemptsValues[0], flex = 1, style = dataEntryStyle)
-        self.attemptsIncrease = toga.Button(text = "+", style = buttonStyle, on_press = self.increaseAttempts, flex = 1)
-        self.attemptsEntryBox.add(self.attemptsDecrease, self.attemtpsInput, self.attemptsIncrease)
-
-        self.notesLabel = toga.Label(text = "Notes:", flex = 1)
-        self.notesInput = toga.MultilineTextInput(flex = 3, style = dataEntryStyle)
+        self.attemptsLabel = toga.Label(text = "Attempts:", flex = 0.5)
+        self.attemptsDecrease = toga.Button(text = "-", on_press = self.decreaseAttempts, style = buttonStyle)
+        self.attemtpsInput = toga.Label(text = self.attemptsValues[0], background_color = "white", flex = 1)
+        self.attemptsIncrease = toga.Button(text = "+", on_press = self.increaseAttempts, style = buttonStyle)
+        self.notesLabel = toga.Label(text = "Notes:", flex = 0.5)
+        self.notesInput = toga.MultilineTextInput(background_color = "white", flex = 1)
 
         #Check if editing or making new entry
         if rowID == None:
-            self.Button = toga.Button(direction = ROW, text = "Add", flex = 1, on_press = self.addEntry, style = buttonStyle)
-            self.leadType(None)
+            self.Button = toga.Button(text = "Add", on_press = self.addEntry, style = buttonStyle)
+            self.type = "Lead"
         else:
-            self.Button = toga.Button(direction = ROW, text = "Update", flex = 1, on_press = self.updateEntry, style = buttonStyle)
+            self.Button = toga.Button(text = "Update", on_press = self.updateEntry, style = buttonStyle)
             self.selectedRow = Entry(*next(self.app.cur.execute(f"SELECT * FROM Entries WHERE ID = {self.rowID}")))
 
             if self.selectedRow.getType() == "Boulder":
-                self.boulderType(None)
+                self.type = "Boulder"
                 self.gradeInput.text = self.selectedRow.getGrade()
                 self.gradeIndex = self.gradeValues.index(self.gradeInput.text)
-            if self.selectedRow.getType() == "Lead":
-                self.leadType(None)
+            elif self.selectedRow.getType() == "Lead":
+                self.type = "Lead"
                 self.numberSelection.value = self.selectedRow.getGrade()[0:1]
                 self.gradeInput.text = self.selectedRow.getGrade()[1:]
                 self.gradeIndex = self.gradeValues.index(self.gradeInput.text)
@@ -347,14 +346,19 @@ class AddScreen():
             self.notesInput.value = self.selectedRow.getNotes()
 
         #Adding Widgets to Boxes
-        self.typeBox.add(self.leadButton, self.boulderButton)
-        self.dateBox.add(self.dateLabel, self.dateInput)
-        self.gradeBox.add(self.gradeLabel, self.gradeEntryBox)
-        self.attemptsBox.add(self.attemptsLabel, self.attemptsEntryBox)
-        self.notesBox.add(self.notesLabel, self.notesInput)
-        self.buttonBox.add(self.Button)
+        self.typeBox.add(toga.Box(flex=0.5), self.leadButton, toga.Box(flex=0.5), self.boulderButton, toga.Box(flex=0.5))
+        self.dateBox.add(toga.Box(flex=0.5), self.dateLabel, toga.Box(flex=0.25), self.dateInput, toga.Box(flex=0.5))
+        self.gradeBox.add(toga.Box(flex=0.5), self.gradeLabel, toga.Box(flex=0.25), self.gradeDecrease, self.gradeInput, self.gradeIncrease, toga.Box(flex=0.5))
+        self.attemptsBox.add(toga.Box(flex=0.5), self.attemptsLabel, toga.Box(flex=0.25), self.attemptsDecrease, self.attemtpsInput, self.attemptsIncrease, toga.Box(flex=0.5))
+        self.notesBox.add(toga.Box(flex=0.25), self.notesLabel, toga.Box(flex=0.25), self.notesInput, toga.Box(flex=0.25))
+        self.buttonBox.add(toga.Box(flex=0.5), self.Button, toga.Box(flex=0.5))
 
         self.contentBox.add(self.typeBox, self.dateBox, self.gradeBox, self.attemptsBox, self.notesBox, self.buttonBox)
+
+        if self.type =="Lead":
+            self.leadType(None)
+        elif self.type == "Boulder":
+            self.boulderType(None)
 
 
     def leadType(self, widget):
@@ -362,8 +366,8 @@ class AddScreen():
         self.leadButton.background_color = lightGreen
         self.boulderButton.background_color = darkGreen
 
-        if self.numberSelection not in self.gradeEntryBox.children:
-            self.gradeEntryBox.insert(0, self.numberSelection)
+        if self.numberSelection not in self.gradeBox.children:
+            self.gradeBox.insert(3, self.numberSelection)
 
         self.gradeValues = ["a", "a+", "b", "b+", "c", "c+"]
         self.gradeInput.text = self.gradeValues[0]
@@ -374,7 +378,7 @@ class AddScreen():
         self.leadButton.background_color = darkGreen
         self.boulderButton.background_color = lightGreen
 
-        self.gradeEntryBox.remove(self.numberSelection)
+        self.gradeBox.remove(self.numberSelection)
 
         self.gradeValues = [f"V{i}" for i in range(0,18)]
         self.gradeInput.text = self.gradeValues[0]
