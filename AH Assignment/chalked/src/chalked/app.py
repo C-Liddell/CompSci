@@ -33,12 +33,15 @@ class Entry():
     def getID(self):
         return self.__ID
     
+    # Returns date in form dd/mm/yyyy
     def getFormattedDate(self):
         return f"{self.__date[8:]}/{self.__date[5:7]}/{self.__date[0:4]}"
     
+    # Returns date in form yyyymmdd
     def getSortDate(self):
         return int(self.__date.replace("-", ""))
     
+    # Returns date in form yyyy-mm-dd
     def getDate(self):
         return self.__date
     
@@ -100,8 +103,8 @@ class Chalked(toga.App):
 
         #Defines navbar
         self.navBox = toga.Box(direction = ROW, background_color = darkBlue)
-        self.homeButton = toga.Button("Home", on_press = self.switchScreenMain, style = buttonStyle)
-        self.addButton = toga.Button("Add Entry", on_press = self.switchScreenAdd, style = buttonStyle)
+        self.homeButton = toga.Button(icon = "resources/homeIcon.png", on_press = self.switchScreenMain)
+        self.addButton = toga.Button(icon = "resources/addIcon.png", on_press = self.switchScreenAdd)
         self.navBox.add(toga.Box(flex=1), self.homeButton, toga.Box(flex=1), self.addButton, toga.Box(flex=1))
 
 
@@ -271,7 +274,7 @@ class MainScreen():
     def deleteItem(self, widget, row):
         self.cur.execute(f"DELETE FROM Entries WHERE ID = '{row.data}';")
         self.app.con.commit()
-        self.entries.pop(row.data)
+        self.entries = [entry for entry in self.entries if entry.getID() != row.data]
         self.updateTable()
 
     #Switches to add screen with all fields populated with selected entry data
