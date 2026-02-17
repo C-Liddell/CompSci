@@ -328,17 +328,17 @@ class AddScreen():
         #Check if editing or making new entry
         if rowID == None:
             self.Button = toga.Button(text = "Add", on_press = self.addEntry, style = buttonStyle)
-            self.type = "Lead"
+            self.leadType(None)
         else:
             self.Button = toga.Button(text = "Update", on_press = self.updateEntry, style = buttonStyle)
             self.selectedRow = Entry(*next(self.app.cur.execute(f"SELECT * FROM Entries WHERE ID = {self.rowID}")))
 
             if self.selectedRow.getType() == "Boulder":
-                self.type = "Boulder"
+                self.boulderType(None)
                 self.gradeInput.text = self.selectedRow.getGrade()
                 self.gradeIndex = self.gradeValues.index(self.gradeInput.text)
             elif self.selectedRow.getType() == "Lead":
-                self.type = "Lead"
+                self.leadType(None)
                 self.numberSelection.value = self.selectedRow.getGrade()[0:1]
                 self.gradeInput.text = self.selectedRow.getGrade()[1:]
                 self.gradeIndex = self.gradeValues.index(self.gradeInput.text)
@@ -357,11 +357,6 @@ class AddScreen():
         self.buttonBox.add(toga.Box(flex=0.5), self.Button, toga.Box(flex=0.5))
 
         self.contentBox.add(self.typeBox, self.dateBox, self.gradeBox, self.attemptsBox, self.notesBox, self.buttonBox)
-
-        if self.type =="Lead":
-            self.leadType(None)
-        elif self.type == "Boulder":
-            self.boulderType(None)
 
 
     def leadType(self, widget):
