@@ -61,9 +61,6 @@ class Entry():
     
     def getAttempts(self):
         return self.__attempts
-    
-    def getNotes(self):
-        return self.__notes
 
     def getTitle(self):
         return f"{self.getFormattedDate()} | {self.__type} {self.__grade}"
@@ -326,10 +323,20 @@ class AddScreen():
         self.notesInput = toga.MultilineTextInput(background_color = "white", flex = 1)
 
         #Check if editing or making new entry
-        if rowID == None:
-            self.Button = toga.Button(text = "Add", on_press = self.addEntry, style = buttonStyle)
-            self.leadType(None)
-        else:
+        self.Button = toga.Button(text = "Add", on_press = self.addEntry, style = buttonStyle)
+
+        self.typeBox.add(toga.Box(flex=0.5), self.leadButton, toga.Box(flex=0.5), self.boulderButton, toga.Box(flex=0.5))
+        self.dateBox.add(toga.Box(flex=0.5), self.dateLabel, toga.Box(flex=0.25), self.dateInput, toga.Box(flex=0.5))
+        self.gradeBox.add(toga.Box(flex=0.5), self.gradeLabel, toga.Box(flex=0.25), self.gradeDecrease, self.gradeInput, self.gradeIncrease, toga.Box(flex=0.5))
+        self.attemptsBox.add(toga.Box(flex=0.5), self.attemptsLabel, toga.Box(flex=0.25), self.attemptsDecrease, self.attemtpsInput, self.attemptsIncrease, toga.Box(flex=0.5))
+        self.notesBox.add(toga.Box(flex=0.25), self.notesLabel, toga.Box(flex=0.25), self.notesInput, toga.Box(flex=0.25))
+        self.buttonBox.add(toga.Box(flex=0.5), self.Button, toga.Box(flex=0.5))
+
+        self.contentBox.add(self.typeBox, self.dateBox, self.gradeBox, self.attemptsBox, self.notesBox, self.buttonBox)
+
+        self.leadType(None)
+
+        if rowID != None:
             self.Button = toga.Button(text = "Update", on_press = self.updateEntry, style = buttonStyle)
             self.selectedRow = Entry(*next(self.app.cur.execute(f"SELECT * FROM Entries WHERE ID = {self.rowID}")))
 
@@ -349,14 +356,6 @@ class AddScreen():
             self.notesInput.value = self.selectedRow.getNotes()
 
         #Adding Widgets to Boxes
-        self.typeBox.add(toga.Box(flex=0.5), self.leadButton, toga.Box(flex=0.5), self.boulderButton, toga.Box(flex=0.5))
-        self.dateBox.add(toga.Box(flex=0.5), self.dateLabel, toga.Box(flex=0.25), self.dateInput, toga.Box(flex=0.5))
-        self.gradeBox.add(toga.Box(flex=0.5), self.gradeLabel, toga.Box(flex=0.25), self.gradeDecrease, self.gradeInput, self.gradeIncrease, toga.Box(flex=0.5))
-        self.attemptsBox.add(toga.Box(flex=0.5), self.attemptsLabel, toga.Box(flex=0.25), self.attemptsDecrease, self.attemtpsInput, self.attemptsIncrease, toga.Box(flex=0.5))
-        self.notesBox.add(toga.Box(flex=0.25), self.notesLabel, toga.Box(flex=0.25), self.notesInput, toga.Box(flex=0.25))
-        self.buttonBox.add(toga.Box(flex=0.5), self.Button, toga.Box(flex=0.5))
-
-        self.contentBox.add(self.typeBox, self.dateBox, self.gradeBox, self.attemptsBox, self.notesBox, self.buttonBox)
 
 
     def leadType(self, widget):
