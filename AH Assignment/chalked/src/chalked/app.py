@@ -321,23 +321,23 @@ class AddScreen():
         self.attemptsIncrease = toga.Button(text = "+", on_press = self.increaseAttempts, style = buttonStyle)
         self.notesLabel = toga.Label(text = "Notes:", flex = 0.5)
         self.notesInput = toga.MultilineTextInput(background_color = "white", flex = 1)
-
-        #Check if editing or making new entry
         self.Button = toga.Button(text = "Add", on_press = self.addEntry, style = buttonStyle)
 
+        #Adds widgets to boxes
         self.typeBox.add(toga.Box(flex=0.5), self.leadButton, toga.Box(flex=0.5), self.boulderButton, toga.Box(flex=0.5))
         self.dateBox.add(toga.Box(flex=0.5), self.dateLabel, toga.Box(flex=0.25), self.dateInput, toga.Box(flex=0.5))
         self.gradeBox.add(toga.Box(flex=0.5), self.gradeLabel, toga.Box(flex=0.25), self.gradeDecrease, self.gradeInput, self.gradeIncrease, toga.Box(flex=0.5))
         self.attemptsBox.add(toga.Box(flex=0.5), self.attemptsLabel, toga.Box(flex=0.25), self.attemptsDecrease, self.attemtpsInput, self.attemptsIncrease, toga.Box(flex=0.5))
         self.notesBox.add(toga.Box(flex=0.25), self.notesLabel, toga.Box(flex=0.25), self.notesInput, toga.Box(flex=0.25))
         self.buttonBox.add(toga.Box(flex=0.5), self.Button, toga.Box(flex=0.5))
-
         self.contentBox.add(self.typeBox, self.dateBox, self.gradeBox, self.attemptsBox, self.notesBox, self.buttonBox)
 
         self.leadType(None)
 
+        #Checks for and sets up add screen for editing entry
         if rowID != None:
-            self.Button = toga.Button(text = "Update", on_press = self.updateEntry, style = buttonStyle)
+            self.Button.text = "Update"
+            self.Button.on_press = self.updateEntry
             self.selectedRow = Entry(*next(self.app.cur.execute(f"SELECT * FROM Entries WHERE ID = {self.rowID}")))
 
             if self.selectedRow.getType() == "Boulder":
@@ -355,9 +355,7 @@ class AddScreen():
             self.attemptsIndex = self.attemptsValues.index(self.attemtpsInput.text)
             self.notesInput.value = self.selectedRow.getNotes()
 
-        #Adding Widgets to Boxes
-
-
+    #Handler for leadButton
     def leadType(self, widget):
         self.type = "Lead"
         self.leadButton.background_color = lightGreen
@@ -370,6 +368,7 @@ class AddScreen():
         self.gradeInput.text = self.gradeValues[0]
         self.gradeIndex = 0
 
+    #Handler for boulderButton
     def boulderType(self, widget):
         self.type = "Boulder"
         self.leadButton.background_color = darkGreen
@@ -381,16 +380,19 @@ class AddScreen():
         self.gradeInput.text = self.gradeValues[0]
         self.gradeIndex = 0
 
-
+    #Handler for gradeDecrease button
     def decreaseGrade(self, widget):
         self.gradeIndex = self.changeValue(self.gradeIndex, self.gradeValues, "-", self.gradeInput)
 
+    #Handler for gradeIncrease button
     def increaseGrade(self, widget):
         self.gradeIndex = self.changeValue(self.gradeIndex, self.gradeValues, "+", self.gradeInput)
 
+    #Handler for attemptsDecrease button
     def decreaseAttempts(self, widget):
         self.attemptsIndex = self.changeValue(self.attemptsIndex, self.attemptsValues, "-", self.attemtpsInput)
 
+    #Handler for attemptsIncrease button
     def increaseAttempts(self, widget):
         self.attemptsIndex = self.changeValue(self.attemptsIndex, self.attemptsValues, "+", self.attemtpsInput)
 
