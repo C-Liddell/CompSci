@@ -228,9 +228,10 @@ class MainScreen():
     #Queries db for entries of a specific type
     def filterList(self, type):
         newList = []
-        for row in self.cur.execute(f"SELECT * FROM Entries WHERE Type LIKE '{type}%';"):
-            newList.append(Entry(row[0], row[1], row[2], row[3], row[4], row[5]))
-        self.entries = newList
+        results = self.cur.execute(f"SELECT * FROM Entries WHERE Type LIKE '{type}%';")
+        for row in results:
+            newList.append(row)
+        self.entries = [Entry(newList[i][0], newList[i][1], newList[i][2], newList[i][3], newList[i][4], newList[i][5]) for i in range(len(newList))]
         self.updateSort()
         self.updateTable()
 
