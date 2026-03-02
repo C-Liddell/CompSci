@@ -396,6 +396,7 @@ class AddScreen():
     def increaseAttempts(self, widget):
         self.attemptsIndex = self.changeValue(self.attemptsIndex, self.attemptsValues, "+", self.attemtpsInput)
 
+    #Changes index in required direction while clamping
     def changeValue(self, index, valueList, direction, targetWidget):
         if direction == "+":
             index += 1
@@ -406,8 +407,10 @@ class AddScreen():
         targetWidget.text = valueList[index]
         return index
 
-
+    #Adds entry to database
     async def addEntry(self, widget):
+
+        #Auto number
         grade = self.getGradeValue()
         try:
             previousID = next(self.cur.execute("SELECT MAX(ID) FROM Entries;"))[0]
@@ -423,6 +426,7 @@ class AddScreen():
         addedEntryDialog = toga.InfoDialog("Entry Added", "Entry Added to Database")
         await self.app.main_window.dialog(addedEntryDialog)
 
+    #Updates entry in database
     async def updateEntry(self, widget):
         grade = self.getGradeValue()
         self.cur.execute(f"UPDATE Entries SET date = '{self.dateInput.value}', type = '{self.type}', grade = '{grade}', attempts = '{self.attemtpsInput.text}', notes = '{self.notesInput.value}' WHERE ID = {self.rowID}")
