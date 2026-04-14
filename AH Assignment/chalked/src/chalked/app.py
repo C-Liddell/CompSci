@@ -91,7 +91,7 @@ class Chalked(toga.App):
         #Creates/Connects to database
         self.path = self.paths.data / "entriesDatabase.db"
         try:
-            database = open(self.path, "x")
+            database = open(self.path, "x") # Attempts to create database, returns error if already exists
             self.connectToDB()
             self.cur.execute("CREATE TABLE 'Entries' ('ID' INTEGER, 'Date' TEXT, 'Type' TEXT, 'Grade' TEXT, 'Attempts' TEXT, 'Notes' TEXT);")
         except:
